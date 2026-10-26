@@ -1,5 +1,6 @@
 package lab2;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -58,18 +59,53 @@ public final class Strategies {
     /** Stateless DFS по дереву выборов: каждый прогон с нуля, повторяет префикс прошлого и берёт следующий вариант.
      *  bound — максимум вытеснений (этап 5); для dfs runner передаёт Integer.MAX_VALUE. */
     public static final class Dfs implements Strategy {
-        public Dfs(int bound) { }
+        private final int bound;
+        private final List<List<Integer>> options = new ArrayList<>();
+        private final List<Integer> choices = new ArrayList<>();
+        private int position;
+
+        public Dfs(int bound) {
+            if (bound < 0) throw new IllegalArgumentException("bound must be non-negative");
+            this.bound = bound;
+        }
 
         /** Подготовиться к новому прогону (позиция в пути, счётчик вытеснений). */
-        public void beginRun() { }
+        public void beginRun() { position = 0; }
 
         public int pick(List<Integer> enabled, int last) {
-            throw new UnsupportedOperationException("TODO этап 4: Dfs.pick");
+            if (enabled.isEmpty()) throw new IllegalArgumentException("enabled is empty");
+
+            if (position == options.size()) {
+                options.add(List.copyOf(enabled));
+                choices.add(0);
+            }
+
+            List<Integer> variants = options.get(position);
+            int chosen = variants.get(choices.get(position));
+            if (!enabled.contains(chosen)) {
+                throw new IllegalStateException("saved DFS choice is not enabled");
+            }
+            position++;
+            return chosen;
         }
 
         /** Выбрать следующий путь; false — дерево обойдено. */
         public boolean endRun() {
-            throw new UnsupportedOperationException("TODO этап 4: Dfs.endRun");
+            truncate(position);
+            for (int i = position - 1; i >= 0; i--) {
+                int next = choices.get(i) + 1;
+                if (next < options.get(i).size()) {
+                    choices.set(i, next);
+                    truncate(i + 1);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private void truncate(int size) {
+            while (options.size() > size) options.remove(options.size() - 1);
+            while (choices.size() > size) choices.remove(choices.size() - 1);
         }
     }
 }
