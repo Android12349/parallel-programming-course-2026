@@ -63,6 +63,7 @@ public final class Strategies {
         private final List<List<Integer>> options = new ArrayList<>();
         private final List<Integer> choices = new ArrayList<>();
         private int position;
+        private int preemptions;
 
         public Dfs(int bound) {
             if (bound < 0) throw new IllegalArgumentException("bound must be non-negative");
@@ -70,13 +71,23 @@ public final class Strategies {
         }
 
         /** Подготовиться к новому прогону (позиция в пути, счётчик вытеснений). */
-        public void beginRun() { position = 0; }
+        public void beginRun() {
+            position = 0;
+            preemptions = 0;
+        }
 
         public int pick(List<Integer> enabled, int last) {
             if (enabled.isEmpty()) throw new IllegalArgumentException("enabled is empty");
 
             if (position == options.size()) {
-                options.add(List.copyOf(enabled));
+                List<Integer> allowed = new ArrayList<>();
+                for (int candidate : enabled) {
+                    if (!isPreemption(candidate, enabled, last) || preemptions < bound) {
+                        allowed.add(candidate);
+                    }
+                }
+                if (allowed.isEmpty()) throw new IllegalStateException("no choices within preemption bound");
+                options.add(List.copyOf(allowed));
                 choices.add(0);
             }
 
@@ -85,6 +96,7 @@ public final class Strategies {
             if (!enabled.contains(chosen)) {
                 throw new IllegalStateException("saved DFS choice is not enabled");
             }
+            if (isPreemption(chosen, enabled, last)) preemptions++;
             position++;
             return chosen;
         }
@@ -106,6 +118,10 @@ public final class Strategies {
         private void truncate(int size) {
             while (options.size() > size) options.remove(options.size() - 1);
             while (choices.size() > size) choices.remove(choices.size() - 1);
+        }
+
+        private boolean isPreemption(int chosen, List<Integer> enabled, int last) {
+            return last >= 0 && chosen != last && enabled.contains(last);
         }
     }
 }
