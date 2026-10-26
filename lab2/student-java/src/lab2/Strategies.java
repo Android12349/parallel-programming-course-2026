@@ -1,6 +1,7 @@
 package lab2;
 
 import java.util.List;
+import java.util.Random;
 
 /* Стратегии выбора следующего потока.
  * FirstAlive — этап 1, Replay — этап 2, RandomPick — этап 3, Dfs — этап 4 (ограничение bound — этап 5).
@@ -44,10 +45,13 @@ public final class Strategies {
 
     /** Случайный поток: enabled.get(rnd.nextInt(enabled.size())), rnd = new java.util.Random(seed). */
     public static final class RandomPick implements Strategy {
-        public RandomPick(long seed) { }
+        private final Random rnd;
+
+        public RandomPick(long seed) { rnd = new Random(seed); }
 
         public int pick(List<Integer> enabled, int last) {
-            throw new UnsupportedOperationException("TODO этап 3: RandomPick.pick");
+            if (enabled.isEmpty()) throw new IllegalArgumentException("enabled is empty");
+            return enabled.get(rnd.nextInt(enabled.size()));
         }
     }
 
