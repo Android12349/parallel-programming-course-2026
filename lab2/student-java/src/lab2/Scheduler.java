@@ -56,6 +56,7 @@ public final class Scheduler {
     }
 
     private final List<Worker> workers = new ArrayList<>();
+    private final List<SchedLock> locks = new ArrayList<>();
     private final Semaphore schedulerTurn = new Semaphore(0);
     private final StringBuilder trace = new StringBuilder();
 
@@ -90,7 +91,9 @@ public final class Scheduler {
 
                 List<Integer> enabled = enabledWorkers();
                 if (enabled.isEmpty()) {
-                    throw new IllegalStateException("no enabled threads");
+                    deadlock = heldLocks();
+                    abortWorkers();
+                    break;
                 }
 
                 int chosen = strategy.pick(List.copyOf(enabled), last);
@@ -151,6 +154,29 @@ public final class Scheduler {
         worker.touchedSincePause = true;
     }
 
+    static void beforeLockOperation(SchedLock lock) {
+        Worker worker = currentWorker();
+        if (worker.scheduler != lock.scheduler()) {
+            throw new IllegalArgumentException("lock belongs to another scheduler");
+        }
+        BooleanSupplier available = lock::isFree;
+        if (worker.touchedSincePause || !available.getAsBoolean()) {
+            worker.scheduler.pause(worker, available);
+        }
+    }
+
+    static void afterLockOperation(String operation) {
+        afterSharedOperation(operation);
+    }
+
+    static int currentThreadId() {
+        return currentWorker().id;
+    }
+
+    void registerLock(SchedLock lock) {
+        locks.add(lock);
+    }
+
     private static Worker currentWorker() {
         Worker worker = CURRENT.get();
         if (worker == null) throw new IllegalStateException("scheduler operation outside a spawned thread");
@@ -188,6 +214,19 @@ public final class Scheduler {
     private Throwable firstFailure() {
         for (Worker worker : workers) if (worker.failure != null) return worker.failure;
         return null;
+    }
+
+    private String heldLocks() {
+        StringBuilder result = new StringBuilder("held={");
+        boolean first = true;
+        for (SchedLock lock : locks) {
+            int owner = lock.owner();
+            if (owner < 0) continue;
+            if (!first) result.append(", ");
+            result.append(lock.name).append(':').append((char) ('A' + owner));
+            first = false;
+        }
+        return result.append('}').toString();
     }
 
     private RuntimeException propagate(Throwable failure) {

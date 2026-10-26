@@ -640,7 +640,7 @@ mode=volatile samples=2,000,000
 - Процессор (модель, число физических и логических ядер): `13th Gen Intel(R) Core(TM) i5-1340P, 1900 МГц, ядер: 12 (4 P-cores, 8 E-cores), логических процессоров: 16`
 - Операционная система и версия ядра: `Windows 11 Pro, 10.0.26200 Н/Д построение 26200`
 - Версия компилятора / JDK: `javac 21.0.12, Eclipse Temurin OpenJDK 21.0.12 LTS (64-bit)`
-- Этапы 1–2: вывод `withdraw-v0 first`, `withdraw-v1 first`, `transfer replay AB` совпал с методичкой (да / нет): `...`
+- Этапы 1–2: вывод `withdraw-v0 first`, `withdraw-v1 first`, `transfer replay AB` совпал с методичкой (да / нет): `да`
 
 ### 2. Результаты этапов 0–5
 
